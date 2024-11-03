@@ -1,56 +1,108 @@
-import os
 import json
+import os
 import matplotlib.pyplot as plt
 
+# Определяем путь к файлам
 script_dir = os.path.dirname(os.path.abspath(__file__))
-json_file_path = os.path.join(script_dir, "plots.json")
+config_file_path = os.path.join(script_dir, 'config.json')
+plots_file_path = os.path.join(script_dir, 'plots.json')
 
-with open(json_file_path, 'r') as file:
-    data = json.load(file)
+# Загрузка конфигурации
+with open(config_file_path, 'r') as config_file:
+    config = json.load(config_file)
 
-def plot_integral_deviation(data):
-    if "Integral deviation" in data:
-        integral_data = data["Integral deviation"]
-        precisions = [item['precision'] for item in integral_data]
-        steps = [item['steps'] for item in integral_data]
+# Загрузка данных из plots.json
+with open(plots_file_path, 'r') as data_file:
+    data = json.load(data_file)
 
-        plt.figure(figsize=(6, 4))
-        plt.plot(precisions, steps, marker='o')
-        plt.xlabel('Precision')
-        plt.ylabel('Steps')
-        plt.title('Integral Deviation')
-        plt.grid(True)
-        plt.show()
+# Настройки графиков
+plt.style.use('ggplot')
+colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 
-def plot_derivatives(data, derivative_type, h_params, remove_edges=False):
+h_params = config.get("H_PARAMS", [0.2, 0.1, 0.05])
+
+# График отклонения первой производной
+plt.figure(figsize=(10, 6))
+for idx, h_param in enumerate(h_params):
+    h_param_str = str(h_param)
+    if h_param_str in data['First derivative']:
+        deviations = data['First derivative'][h_param_str]
+        x_values = [item['x'] for item in deviations]
+        y_values = [item['deviation'] for item in deviations]
+        plt.plot(x_values, y_values, label=f'h = {h_param_str}', color=colors[idx % len(colors)])
+
+plt.title('First Derivative Deviation vs X')
+plt.xlabel('X')
+plt.ylabel('Deviation')
+plt.legend()
+plt.grid(True)
+plt.savefig('first_derivative_deviation.png')
+plt.show()
+
+# Дополнительный график для первой производной с отсечением первой и последней точек
+plt.figure(figsize=(10, 6))
+for idx, h_param in enumerate(h_params):
+    h_param_str = str(h_param)
+    if h_param_str in data['First derivative']:
+        deviations = data['First derivative'][h_param_str]
+        x_values = [item['x'] for item in deviations]
+        y_values = [item['deviation'] for item in deviations]
+
+        # Отсекаем первую и последнюю точки
+        if len(x_values) > 2 and len(y_values) > 2:
+            x_values = x_values[1:-1]
+            y_values = y_values[1:-1]
+
+        plt.plot(x_values, y_values, label=f'h = {h_param_str}', color=colors[idx % len(colors)])
+
+plt.title('First Derivative Deviation vs X (Without Edge Points)')
+plt.xlabel('X')
+plt.ylabel('Deviation')
+plt.legend()
+plt.grid(True)
+plt.savefig('first_derivative_deviation_no_edges.png')
+plt.show()
+
+# График отклонения второй производной с отсечением первой и последней точек
+plt.figure(figsize=(10, 6))
+for idx, h_param in enumerate(h_params):
+    h_param_str = str(h_param)
+    if h_param_str in data['Second derivative']:
+        deviations = data['Second derivative'][h_param_str]
+        x_values = [item['x'] for item in deviations]
+        y_values = [item['deviation'] for item in deviations]
+
+        # Отсекаем первую и последнюю точки
+        if len(x_values) > 2 and len(y_values) > 2:
+            x_values = x_values[1:-1]
+            y_values = y_values[1:-1]
+
+        plt.plot(x_values, y_values, label=f'h = {h_param_str}', color=colors[idx % len(colors)])
+
+plt.title('Second Derivative Deviation vs X (Without Edge Points)')
+plt.xlabel('X')
+plt.ylabel('Deviation')
+plt.legend()
+plt.grid(True)
+plt.savefig('second_derivative_deviation_no_edges.png')
+plt.show()
+
+# График количества шагов интегрирования в зависимости от точности
+if "Integral" in data:
+    precisions = [item['precision'] for item in data['Integral']]
+    steps = [item['steps'] for item in data['Integral']]
+
     plt.figure(figsize=(10, 6))
-
-    for h_param in h_params:
-        h_param_str = f"{h_param:.6f}"
-        if h_param_str in data[derivative_type]:
-            x_vals = [item['x'] for item in data[derivative_type][h_param_str]]
-            deviations = [item['deviation'] for item in data[derivative_type][h_param_str]]
-
-            if remove_edges and len(x_vals) > 2:
-                x_vals = x_vals[1:-1]
-                deviations = deviations[1:-1]
-
-            plt.plot(x_vals, deviations, label=f'H_PARAM: {h_param_str}', marker='o')
-
-    plt.xlabel('x')
-    plt.ylabel('Deviation')
-    plt.title(f'{derivative_type} for Different H_PARAM')
-    plt.legend()
+    plt.plot(precisions, steps, marker='o', linestyle='-')
+    plt.title('Integral Steps vs Precision')
+    plt.xlabel('Precision')
+    plt.ylabel('Number of Steps')
+    plt.xscale('log')
+    plt.gca().invert_xaxis()
     plt.grid(True)
+    plt.savefig('integral_steps_vs_precision.png')
     plt.show()
+else:
+    print("Key 'Integral' not found in data.")
 
-plot_integral_deviation(data)
-
-h_params = [0.05, 0.1, 0.2]
-
-if "First derivative" in data:
-    plot_derivatives(data, "First derivative", h_params)
-    plot_derivatives(data, "First derivative", h_params, remove_edges=True)
-
-if "Second derivative" in data:
-    plot_derivatives(data, "Second derivative", h_params, remove_edges=True)
+print("Графики успешно сохранены.")

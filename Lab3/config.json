@@ -1,0 +1,8 @@
+{
+  "H_PARAMS": [ 0.2, 0.1, 0.05 ],
+  "PRECISION_VALUES": [ 1, 0.1, 0.01, 0.001 ],
+  "POINTS_NUMBER": 21,
+  "PLOTS_JSON_FILE": "plots.json",
+  "A": -2,
+  "B": 5
+}
